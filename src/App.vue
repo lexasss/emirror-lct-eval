@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, handleError } from 'vue'
+import type { Ref } from 'vue'
 
 import { AnswerOption } from './questionnaire'
-import { Response, RequestTarget } from './ws-io'
+import { Response, ResponseType, RequestType } from './ws-io'
 
 import type { IRequest } from './ws-io'
 
@@ -41,13 +42,12 @@ const enum ConnState {
 
 let socket: WebSocket | null = null;
 
-const value = ref( 0 );
-const isQuestionnaireVisible = ref( false );
 const connState = ref( ConnState.NotInitialized );
 const ip = ref( '127.0.0.1' );
-const instruction = ref( 'Cannot connect to the experiment app' );
-const nextTargetButtonCaption = ref( 'Next target' );
+const instruction: Ref<string[]> = ref( [] );
+const nextTargetButtonCaption = ref( '' );
 const debugMessage = ref( '' );
+const isQuestionnaireVisible = ref( false );
 
 const isConnectionClosed = computed( () => connState.value === ConnState.NotConnected );
 const isNotConnected = computed( () => connState.value === ConnState.NotConnected || connState.value === ConnState.Connecting );
@@ -57,7 +57,7 @@ const connectionStateText = computed( () =>
     connState.value === ConnState.Connecting ? 'Connecting...' :
     connState.value === ConnState.Connected ? 'Connected' : ''
 );
-const hasInstruction = computed( () => !!instruction.value && !isQuestionnaireVisible.value );
+const hasInstruction = computed( () => !!instruction.value.length && !isQuestionnaireVisible.value );
 const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !isQuestionnaireVisible.value );
 const hasDebugMessage = computed( () => !!debugMessage.value );
 
@@ -81,19 +81,14 @@ function connect() {
         console.log( `[CONN] msg = ${e.data}` );
         const request: IRequest = JSON.parse( e.data );
 
-        if (request.target === RequestTarget.button) {
-
+        if (request.target === RequestType.button) {
+            onRequestButton(request.cmd, request.param)
         }
-        else if (request.target === RequestTarget.questionnaire) {
+        else if (request.target === RequestType.questionnaire) {
             isQuestionnaireVisible.value = request.cmd === 'show'
         }
-        else if (request.target === RequestTarget.message) {
-            if (request.cmd == 'show') {
-                instruction.value = request.param
-            }
-            else {
-                instruction.value = ''
-            }
+        else if (request.target === RequestType.message) {
+            onRequestMessage(request.cmd, request.param)
         }
         else {
             debugMessage.value = `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})`
@@ -103,11 +98,39 @@ function connect() {
     return socket;
 }
 
-function onQuestionnaireAnswer( e: number ) {
-    value.value = e;
+function onRequestButton(cmd: string, caption?: string) {
+    if (cmd == 'show') {
+        nextTargetButtonCaption.value = caption || 'Next target'
+    }
+    else {
+        nextTargetButtonCaption.value = ''
+    }
+}
 
+function onRequestMessage(cmd: string, text: string[]) {
+    if (cmd == 'show') {
+        if (text instanceof Array) {
+            instruction.value = text
+        }
+        else if (typeof text == 'string') {
+            instruction.value = [ text ]
+        }
+        else {
+            instruction.value = [ `${text}` ]
+        }
+    }
+    else {
+        instruction.value = []
+    }
+}
+
+function onQuestionnaireAnswer( e: number ) {
     isQuestionnaireVisible.value = false;
-    socket?.send( JSON.stringify( new Response('', value.value ) ) );
+    socket?.send( JSON.stringify( new Response(ResponseType.questionnaire, e ) ) );
+}
+
+function onNextTarget() {
+    socket?.send( JSON.stringify( new Response(ResponseType.target, 'random' ) ) );
 }
 
 function applySettings() {
@@ -143,8 +166,9 @@ main
     h2.message.status(v-show="isConnected") {{ connectionStateText }}
 
     .hero
-        h1.instruction(v-show="hasInstruction") {{ instruction }}
-        button.next-target(v-show="hasNextTargetButton") {{ nextTargetButtonCaption }}
+        button.next-target(v-show="hasNextTargetButton" @click="onNextTarget") {{ nextTargetButtonCaption }}
+        .instruction-container(v-show="hasInstruction")
+            .instruction(v-for="inst in instruction") {{ inst }}
 
     Questionnaire(v-if="isQuestionnaireVisible"
         title="How safe it was to change the lane?"
@@ -225,24 +249,28 @@ button.apply {
     display: flex;
     flex-direction: column;
 
-    top: 20%;
+    top: 18em;
     bottom: 0;
     left: 0;
     right: 0;
 }
 
-.instruction {
+.instruction-container {
     color: chartreuse;
-    padding: 1em;
-    padding-top: calc(40% - 1em);
+    padding: 2em 1em;
     text-align: center;
     align-self: center;
 }
 
-.next-target {
-    padding: 5rem 8rem;
+.instruction {
     font-size: 1.75rem;
-    height: 40%;
+}
+
+.next-target {
+    padding: 8rem;
+    margin: 0 2em;
+    font-size: 1.75rem;
+    border-radius: 0.5em;
 }
 
 .debug {

@@ -4,6 +4,11 @@ export interface IRequest {
     param: any;
 }
 
+export const ResponseType = {
+    questionnaire: 'questionnaire',
+    target: 'target'
+}
+
 export class Response {
     constructor(
         public type: string,
@@ -11,7 +16,7 @@ export class Response {
     ) { }
 }
 
-export const RequestTarget = {
+export const RequestType = {
     button: 'button',
     questionnaire: 'questionnaire',
     message: 'message',
