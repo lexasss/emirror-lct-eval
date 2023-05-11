@@ -1,3 +1,7 @@
+export interface ISettings {
+    ip: string;
+}
+
 export interface IRequest {
     target: string;
     cmd: string;

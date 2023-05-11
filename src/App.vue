@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, handleError } from 'vue'
+
 import type { Ref } from 'vue'
+import type { IRequest } from './common'
 
 import { AnswerOption } from './questionnaire'
-import { Response, ResponseType, RequestType } from './ws-io'
-
-import type { IRequest } from './ws-io'
+import { Response, ResponseType, RequestType } from './common'
 
 import Questionnaire from './components/Questionnaire.vue'
-
-interface ISettings {
-    ip: string;
-}
+import Connection from './components/Connection.vue'
 
 const Answers: Array<AnswerOption> = [
     new AnswerOption(
@@ -33,69 +30,29 @@ const Answers: Array<AnswerOption> = [
     ),
 ]
 
-const enum ConnState {
-    NotInitialized,
-    NotConnected,
-    Connecting,
-    Connected,
-}
-
-let socket: WebSocket | null = null;
-
-const connState = ref( ConnState.NotInitialized );
-const ip = ref( '127.0.0.1' );
+const connectionRef = ref()
 const instruction: Ref<string[]> = ref( [] );
 const nextTargetButtonCaption = ref( '' );
 const debugMessage = ref( '' );
 const isQuestionnaireVisible = ref( false );
 
-const isConnectionClosed = computed( () => connState.value === ConnState.NotConnected );
-const isNotConnected = computed( () => connState.value === ConnState.NotConnected || connState.value === ConnState.Connecting );
-const isConnected = computed( () => connState.value === ConnState.Connected );
-const connectionStateText = computed( () =>
-    connState.value === ConnState.NotConnected ? 'Cannot connect to the experiment app' :
-    connState.value === ConnState.Connecting ? 'Connecting...' :
-    connState.value === ConnState.Connected ? 'Connected' : ''
-);
 const hasInstruction = computed( () => !!instruction.value.length && !isQuestionnaireVisible.value );
 const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !isQuestionnaireVisible.value );
 const hasDebugMessage = computed( () => !!debugMessage.value );
 
-
-function connect() {
-    connState.value = ConnState.Connecting;
-    const socket = new WebSocket( `ws://${ip.value}:15555` );
-
-    socket.addEventListener( 'open', e => {
-        console.log('[CONN] opened');
-        connState.value = ConnState.Connected;
-    });
-    socket.addEventListener( 'close', e => {
-        console.log('[CONN] closed');
-        connState.value = ConnState.NotConnected;
-    });
-    socket.addEventListener( 'error', e => {
-        connState.value = ConnState.NotConnected;
-    });
-    socket.addEventListener('message', e => {
-        console.log( `[CONN] msg = ${e.data}` );
-        const request: IRequest = JSON.parse( e.data );
-
-        if (request.target === RequestType.button) {
-            onRequestButton(request.cmd, request.param)
-        }
-        else if (request.target === RequestType.questionnaire) {
-            isQuestionnaireVisible.value = request.cmd === 'show'
-        }
-        else if (request.target === RequestType.message) {
-            onRequestMessage(request.cmd, request.param)
-        }
-        else {
-            debugMessage.value = `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})`
-        }
-    });
-
-    return socket;
+function onRequest(request: IRequest) {
+    if (request.target === RequestType.button) {
+        onRequestButton(request.cmd, request.param)
+    }
+    else if (request.target === RequestType.questionnaire) {
+        isQuestionnaireVisible.value = request.cmd === 'show'
+    }
+    else if (request.target === RequestType.message) {
+        onRequestMessage(request.cmd, request.param)
+    }
+    else {
+        debugMessage.value = `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})`
+    }
 }
 
 function onRequestButton(cmd: string, caption?: string) {
@@ -126,44 +83,19 @@ function onRequestMessage(cmd: string, text: string[]) {
 
 function onQuestionnaireAnswer( e: number ) {
     isQuestionnaireVisible.value = false;
-    socket?.send( JSON.stringify( new Response(ResponseType.questionnaire, e ) ) );
+    connectionRef.value.send( JSON.stringify( new Response(ResponseType.questionnaire, e ) ) );
 }
 
 function onNextTarget() {
-    socket?.send( JSON.stringify( new Response(ResponseType.target, 'random' ) ) );
+    connectionRef.value.send( JSON.stringify( new Response(ResponseType.target, 'random' ) ) );
 }
-
-function applySettings() {
-    localStorage.setItem( 'emirrorquest', JSON.stringify({
-        ip: ip.value,
-    } as ISettings));
-
-    socket?.close();
-    socket = connect();
-}
-
-onMounted(() => {
-    const settingsStr = localStorage.getItem( 'emirrorquest' );
-    if (settingsStr) {
-        const settings = JSON.parse( settingsStr ) as ISettings;
-        ip.value = settings.ip || ip.value;
-    }
-
-    socket = connect();
-})
 
 </script>
 
 <template lang="pug">
 main
-    h2.message(v-show="isNotConnected" :class="{ error: isConnectionClosed }") {{ connectionStateText }}
-        .settings(v-if="isConnectionClosed")
-            .row
-                .label IP 
-                input.setting(type="text" v-model="ip")
-            .row
-                button.apply(@click="applySettings") Apply
-    h2.message.status(v-show="isConnected") {{ connectionStateText }}
+    Connection(ref="connectionRef"
+        @request="onRequest")
 
     .hero
         button.next-target(v-show="hasNextTargetButton" @click="onNextTarget") {{ nextTargetButtonCaption }}
@@ -190,59 +122,6 @@ main
   font-weight: normal;
 }
 
-.message {
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    top: -0.5em;
-    padding: 1.75em 2.5em;
-    left: 50%;
-    background-color: var(--color-background-soft);
-    border-radius: 0.25em;
-    border: #06a 2px solid;
-    transform: translateX(-50%);
-}
-
-.status {
-    padding: 0.75em 2.5em;
-}
-
-.error {
-    border: #800 2px solid;
-    background-color: rgba(128, 0, 0, 0.2);
-}
-
-.settings {
-    display: flex;
-    flex-direction: column;
-    padding: 0.5em;
-    margin-top: 1em;
-    border-radius: 0.25em;
-    border: #06a 2px solid;
-    background-color: rgba(0, 102, 170, 0.2);
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-    margin: 0.25em 0;
-}
-
-.label {
-    padding: 0 1.5em 0 0;
-}
-
-.setting {
-    font-size: 1rem;
-    flex-grow: 1;
-}
-
-button.apply {
-    font-size: 1rem;
-    margin: 0.25em 0 0 0;
-    padding: 0.75em 1.5em;
-    flex-grow: 1;
-}
 
 .hero {
     position: fixed;
