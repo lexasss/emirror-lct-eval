@@ -86,7 +86,7 @@ export default defineComponent({
 </script>
 
 <template lang="pug">
-div
+.conn
     h2.message(v-show="isNotConnected" :class="{ error: isConnectionClosed }") {{ connectionStateText }}
         .settings(v-if="isConnectionClosed")
             .row
@@ -98,6 +98,10 @@ div
 </template>
     
 <style scoped>
+.conn {
+    z-index: 1;
+}
+
 .message {
     display: flex;
     flex-direction: column;
@@ -115,7 +119,13 @@ div
 }
 .message.error {
     border: #800 2px solid;
-    background-color: rgba(128, 0, 0, 0.2);
+    background-color: rgba(255, 192, 192, 0.8);
+    white-space: nowrap;
+}
+@media (prefers-color-scheme: dark) {
+.message.error {
+    color: var(--vt-c-text-light-1);
+}
 }
 
 .settings {

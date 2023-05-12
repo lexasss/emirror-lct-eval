@@ -33,12 +33,14 @@ const Answers: Array<AnswerOption> = [
 const connectionRef = ref()
 const instruction: Ref<string[]> = ref( [] );
 const nextTargetButtonCaption = ref( '' );
-const debugMessage = ref( '' );
+const debugMessage = ref( 'a car on the next lane very close' );
 const isQuestionnaireVisible = ref( false );
+const targetImage = ref( '' );
 
 const hasInstruction = computed( () => !!instruction.value.length && !isQuestionnaireVisible.value );
 const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !isQuestionnaireVisible.value );
 const hasDebugMessage = computed( () => !!debugMessage.value );
+const hasTargetImage = computed( () => !!targetImage.value );
 
 function onRequest(request: IRequest) {
     if (request.target === RequestType.button) {
@@ -65,9 +67,19 @@ function onRequestButton(cmd: string, caption?: string) {
 }
 
 function onRequestMessage(cmd: string, text: string[]) {
+    targetImage.value = ''
+    
     if (cmd == 'show') {
         if (text instanceof Array) {
             instruction.value = text
+            if (text.length == 2) {
+                const line2 = Array.from(text[1])
+                if (line2.every((letter: string) => letter === ' ' || (letter >= 'A' && letter <= 'Z'))) {
+                    let filename = line2.filter(letter => letter != ' ').join('').toLowerCase();
+                    targetImage.value = `./images/${filename}.webp`;
+                    console.log(targetImage.value)
+                }
+            }
         }
         else if (typeof text == 'string') {
             instruction.value = [ text ]
@@ -87,6 +99,7 @@ function onQuestionnaireAnswer( e: number ) {
 }
 
 function onNextTarget() {
+    nextTargetButtonCaption.value = '';
     connectionRef.value.send( JSON.stringify( new Response(ResponseType.target, 'random' ) ) );
 }
 
@@ -101,6 +114,7 @@ main
         button.next-target(v-show="hasNextTargetButton" @click="onNextTarget") {{ nextTargetButtonCaption }}
         .instruction-container(v-show="hasInstruction")
             .instruction(v-for="inst in instruction") {{ inst }}
+            img.target(v-if="hasTargetImage" :src="targetImage")
 
     Questionnaire(v-if="isQuestionnaireVisible"
         title="How safe it was to change the lane?"
@@ -114,21 +128,19 @@ main
 @import './assets/base.css';
 
 #app {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  overflow: hidden;
-
-  font-weight: normal;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    overflow: hidden;
+    font-weight: normal;
 }
-
 
 .hero {
     position: fixed;
     display: flex;
     flex-direction: column;
 
-    top: 18em;
+    top: 10em;
     bottom: 0;
     left: 0;
     right: 0;
@@ -140,21 +152,40 @@ main
     text-align: center;
     align-self: center;
 }
+@media (prefers-color-scheme: light) {
+.instruction-container {
+    color: darkslategray;
+    font-weight: bold;
+}
+}
 
 .instruction {
     font-size: 1.75rem;
 }
 
-.next-target {
-    padding: 8rem;
-    margin: 0 2em;
+button.next-target {
     font-size: 1.75rem;
+    padding: 5em 1em;
+    margin: 0 2em;
     border-radius: 0.5em;
 }
 
 .debug {
-    color: orangered;
-    max-width: 15rem;
+    position: fixed;
+    left: 1em;
+    right: 1em;
+    bottom: -0.25em;
+    padding: 0.5em 1em;
+    text-align: center;
+
+    background-color: var(--color-background-mute);
+    border-radius: 0.25em;
+    border: rgb(204, 122, 0) 2px solid;
+}
+
+img.target {
+    margin-top: 2rem;
+    height: 250px;
 }
 
 </style>
