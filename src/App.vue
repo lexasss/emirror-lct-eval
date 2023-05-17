@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, handleError } from 'vue'
+import { onMounted, ref, computed, handleError, onActivated } from 'vue'
 
 import type { Ref } from 'vue'
 import type { IRequest } from './common'
@@ -33,27 +33,27 @@ const Answers: Array<AnswerOption> = [
 const connectionRef = ref()
 const instruction: Ref<string[]> = ref( [] );
 const nextTargetButtonCaption = ref( '' );
-const debugMessage = ref( '' );
+const debugMessages = ref( [] as string[] );
 const isQuestionnaireVisible = ref( false );
 const targetImage = ref( '' );
 
 const hasInstruction = computed( () => !!instruction.value.length && !isQuestionnaireVisible.value );
 const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !isQuestionnaireVisible.value );
-const hasDebugMessage = computed( () => !!debugMessage.value );
+const hasDebugMessages = computed( () => !!debugMessages.value.length );
 const hasTargetImage = computed( () => !!targetImage.value );
 
 function onRequest(request: IRequest) {
     if (request.target === RequestType.button) {
-        onRequestButton(request.cmd, request.param)
+        onRequestButton(request.cmd, request.param);
     }
     else if (request.target === RequestType.questionnaire) {
-        isQuestionnaireVisible.value = request.cmd === 'show'
+        isQuestionnaireVisible.value = request.cmd === 'show';
     }
     else if (request.target === RequestType.message) {
-        onRequestMessage(request.cmd, request.param)
+        onRequestMessage(request.cmd, request.param);
     }
     else {
-        debugMessage.value = `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})`
+        debugMessages.value.push( `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})` );
     }
 }
 
@@ -106,6 +106,10 @@ function onNextTarget() {
     connectionRef.value.send( JSON.stringify( new Response(ResponseType.target, 'random' ) ) );
 }
 
+onMounted(() => {
+    window.addEventListener( "error" , (e) => { debugMessages.value.push( `ERROR: ${e.message}` )})
+});
+
 </script>
 
 <template lang="pug">
@@ -124,7 +128,8 @@ main
         :answers="Answers"
         @value="onQuestionnaireAnswer")
 
-    h3.debug(v-show="hasDebugMessage") {{ debugMessage }}
+    h3.debug(v-show="hasDebugMessages")
+        div(v-for="err in debugMessages") {{ err }}
 </template>
 
 <style>
