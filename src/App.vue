@@ -33,7 +33,7 @@ const Answers: Array<AnswerOption> = [
 const connectionRef = ref()
 const instruction: Ref<string[]> = ref( [] );
 const nextTargetButtonCaption = ref( '' );
-const debugMessage = ref( 'a car on the next lane very close' );
+const debugMessage = ref( '' );
 const isQuestionnaireVisible = ref( false );
 const targetImage = ref( '' );
 
@@ -72,6 +72,9 @@ function onRequestMessage(cmd: string, text: string[]) {
     if (cmd == 'show') {
         if (text instanceof Array) {
             instruction.value = text
+
+            // try to detect if this is a target name in te second line
+            // and load an image if this is so
             if (text.length == 2) {
                 const line2 = Array.from(text[1])
                 if (line2.every((letter: string) => letter === ' ' || (letter >= 'A' && letter <= 'Z'))) {
