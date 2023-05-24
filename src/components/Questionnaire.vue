@@ -41,7 +41,8 @@ div
 }
 
 .options {
-    position: relative;
+    display: flex;
+    flex-direction: row;
 }
 
 .option {
@@ -59,6 +60,25 @@ button {
 .descriptions {
     pointer-events: none;
     user-select: none;
+}
+
+@media screen and (max-width: 1024px) {
+    .options {
+        flex-direction: column;
+    }
+}
+@media screen and (min-width: 1024px) {
+    .options {
+        align-items: stretch;
+        bottom: 0;
+    }
+    .option {
+        width: 25%;
+        min-height: 12rem;
+    }
+    .option > button {
+        min-height: 15rem;
+    }
 }
 
 </style>

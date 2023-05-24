@@ -161,19 +161,21 @@ main
     align-self: center;
 }
 @media (prefers-color-scheme: light) {
-.instruction-container {
-    color: darkslategray;
-    font-weight: bold;
+    .instruction-container {
+        color: darkslategray;
+        font-weight: bold;
+    }
 }
-}
-
 .instruction {
     font-size: 1.75rem;
+}
+.instruction:last-of-type {
+    font-weight: bold;
 }
 
 button.next-target {
     font-size: 1.75rem;
-    padding: 5em 1em;
+    min-height: 40vh;
     margin: 0 2em;
     border-radius: 0.5em;
 }
@@ -193,7 +195,20 @@ button.next-target {
 
 img.target {
     margin-top: 2rem;
-    height: 250px;
+    height: 300px;
+}
+
+@media screen and (min-width: 1024px) {
+    .hero {
+        top: 5em;
+        flex-direction: row;
+    }
+    button.next-target {
+        font-size: 2.75rem;
+        padding: inherit;
+        min-width: 50vw;
+        margin: 0.5em 1em;
+    }
 }
 
 </style>
