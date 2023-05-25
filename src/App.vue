@@ -43,6 +43,13 @@ const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !
 const hasDebugMessages = computed( () => !!debugMessages.value.length );
 const hasTargetImage = computed( () => !!targetImage.value );
 
+function onConnected() {
+    instruction.value = [];
+    debugMessages.value = [];
+    isQuestionnaireVisible.value = false;
+    nextTargetButtonCaption.value = '';
+}
+
 function onRequest(request: IRequest) {
     if (request.target === RequestType.button) {
         onRequestButton(request.cmd, request.param);
@@ -119,7 +126,8 @@ onMounted(() => {
 <template lang="pug">
 main
     Connection(ref="connectionRef"
-        @request="onRequest")
+        @request="onRequest"
+        @connected="onConnected")
 
     .hero
         button.next-target(:class="{ 'is-visible': hasNextTargetButton }" @click="onNextTarget") {{ nextTargetButtonCaption }}
@@ -144,11 +152,11 @@ main
 @import './assets/base.css';
 @font-face {
   font-family: Inter;
-  src: url(./fonts/Inter-Regular.ttf);
+  src: url(@/assets/fonts/Inter-Regular.ttf);
 }
 @font-face {
   font-family: Quicksand;
-  src: url(./fonts/Quicksand-Regular.ttf);
+  src: url(@/assets//fonts/Quicksand-Regular.ttf);
 }
 
 #app {

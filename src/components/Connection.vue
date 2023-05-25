@@ -24,7 +24,7 @@ export default defineComponent({
             ip: '127.0.0.1'
         } as IComponentData;
     },
-    emits: ['request'],
+    emits: ['request', 'connected'],
     computed: {
         isConnectionClosed() { return this.connState === ConnState.NotConnected; },
         isNotConnected() { return this.connState === ConnState.NotConnected || this.connState === ConnState.Connecting; },
@@ -71,6 +71,13 @@ export default defineComponent({
 
             this.socket?.close();
             this.socket = this.connect();
+        }
+    },
+    watch: {
+        connState(newValue) {
+            if (newValue == ConnState.Connected) {
+                this.$emit('connected');
+            }
         }
     },
     mounted() {
