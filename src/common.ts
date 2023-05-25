@@ -10,7 +10,7 @@ export interface IRequest {
 
 export const ResponseType = {
     questionnaire: 'questionnaire',
-    target: 'target'
+    target: 'target',
 }
 
 export class Response {
@@ -24,4 +24,5 @@ export const RequestType = {
     button: 'button',
     questionnaire: 'questionnaire',
     message: 'message',
+    score: 'score',
 }

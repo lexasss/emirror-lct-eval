@@ -36,6 +36,7 @@ const nextTargetButtonCaption = ref( '' );
 const debugMessages = ref( [] as string[] );
 const isQuestionnaireVisible = ref( false );
 const targetImage = ref( '' );
+const score = ref( '0' );
 
 const hasInstruction = computed( () => !!instruction.value.length && !isQuestionnaireVisible.value );
 const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !isQuestionnaireVisible.value );
@@ -51,6 +52,9 @@ function onRequest(request: IRequest) {
     }
     else if (request.target === RequestType.message) {
         onRequestMessage(request.cmd, request.param);
+    }
+    else if (request.target === RequestType.score) {
+        score.value = request.cmd;
     }
     else {
         debugMessages.value.push( `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})` );
@@ -118,7 +122,7 @@ main
         @request="onRequest")
 
     .hero
-        button.next-target(v-show="hasNextTargetButton" @click="onNextTarget") {{ nextTargetButtonCaption }}
+        button.next-target(:class="{ 'is-visible': hasNextTargetButton }" @click="onNextTarget") {{ nextTargetButtonCaption }}
         .instruction-container(v-show="hasInstruction")
             .instruction(v-for="inst in instruction") {{ inst }}
             img.target(v-if="hasTargetImage" :src="targetImage")
@@ -130,10 +134,22 @@ main
 
     h3.debug(v-show="hasDebugMessages")
         div(v-for="err in debugMessages") {{ err }}
+
+    .score-container
+        .score-label score:
+        .score {{ score }}
 </template>
 
 <style>
 @import './assets/base.css';
+@font-face {
+  font-family: Inter;
+  src: url(./fonts/Inter-Regular.ttf);
+}
+@font-face {
+  font-family: Quicksand;
+  src: url(./fonts/Quicksand-Regular.ttf);
+}
 
 #app {
     max-width: 1440px;
@@ -148,7 +164,7 @@ main
     display: flex;
     flex-direction: column;
 
-    top: 10em;
+    top: 7em;
     bottom: 0;
     left: 0;
     right: 0;
@@ -178,6 +194,11 @@ button.next-target {
     min-height: 40vh;
     margin: 0 2em;
     border-radius: 0.5em;
+    visibility: hidden;
+}
+
+button.is-visible {
+    visibility: visible;
 }
 
 .debug {
@@ -198,6 +219,27 @@ img.target {
     height: 300px;
 }
 
+.score-container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: stretch;
+}
+.score-label {
+    font-family: Quicksand, sans-serif;
+    font-size: 2.75em;
+    padding-right: 0.25em;
+    margin: auto;
+}
+.score {
+    font-family: Inter, sans-serif;
+    font-size: 3.5rem;
+    line-height: 1em;
+    margin: auto;
+}
+
 @media screen and (min-width: 1024px) {
     .hero {
         top: 5em;
@@ -208,6 +250,10 @@ img.target {
         padding: inherit;
         min-width: 50vw;
         margin: 0.5em 1em;
+    }
+    .score {
+        font-size: 5rem;
+        min-width: 2.5em;
     }
 }
 
