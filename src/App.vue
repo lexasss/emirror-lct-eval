@@ -33,7 +33,7 @@ const Answers: Array<AnswerOption> = [
 const connectionRef = ref()
 const instruction: Ref<string[]> = ref( [] );
 const nextTargetButtonCaption = ref( '' );
-const debugMessages = ref( [] as string[] );
+const debugMessages: Ref<string[]> = ref( [] );
 const isQuestionnaireVisible = ref( false );
 const targetImage = ref( '' );
 const score = ref( '0' );
@@ -48,6 +48,7 @@ function onConnected() {
     debugMessages.value = [];
     isQuestionnaireVisible.value = false;
     nextTargetButtonCaption.value = '';
+    score.value = '0'
 }
 
 function onRequest(request: IRequest) {
@@ -130,7 +131,7 @@ main
         @connected="onConnected")
 
     .hero
-        button.next-target(:class="{ 'is-visible': hasNextTargetButton }" @click="onNextTarget") {{ nextTargetButtonCaption }}
+        button.next-target(v-show="hasNextTargetButton" @click="onNextTarget") {{ nextTargetButtonCaption }}
         .instruction-container(v-show="hasInstruction")
             .instruction(v-for="inst in instruction") {{ inst }}
             img.target(v-if="hasTargetImage" :src="targetImage")
@@ -174,8 +175,8 @@ main
 
     top: 7em;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .instruction-container {
@@ -202,11 +203,6 @@ button.next-target {
     min-height: 40vh;
     margin: 0 2em;
     border-radius: 0.5em;
-    visibility: hidden;
-}
-
-button.is-visible {
-    visibility: visible;
 }
 
 .debug {
