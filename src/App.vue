@@ -2,9 +2,9 @@
 import { onMounted, ref, computed } from 'vue'
 
 import type { Ref } from 'vue'
-import type { IRequest } from './common'
+import type { ISettings, IRequest } from './common'
 
-import { Response, ResponseType, RequestType } from './common'
+import { SettingsName, Response, ResponseType, RequestType } from './common'
 
 import Questionnaire from './components/Questionnaire.vue'
 import Likert from './components/Likert.vue'
@@ -16,7 +16,8 @@ const nextTargetButtonCaption = ref( '' );
 const debugMessages: Ref<string[]> = ref( [] );
 const isQuestionnaireVisible = ref( false );
 const targetImage = ref( '' );
-const score = ref( '0' );
+const score = ref( 0 );
+const maxScore = ref( 0 );
 
 const hasInstruction = computed( () => !!instruction.value.length && !isQuestionnaireVisible.value );
 const hasNextTargetButton = computed( () => !!nextTargetButtonCaption.value && !isQuestionnaireVisible.value );
@@ -28,7 +29,7 @@ function onConnected() {
     debugMessages.value = [];
     isQuestionnaireVisible.value = false;
     nextTargetButtonCaption.value = '';
-    score.value = '0'
+    score.value = 0;
 }
 
 function onRequest(request: IRequest) {
@@ -42,7 +43,11 @@ function onRequest(request: IRequest) {
         onRequestMessage(request.cmd, request.param);
     }
     else if (request.target === RequestType.score) {
-        score.value = request.cmd;
+        score.value = Number.parseInt(request.cmd, 10);
+        if (score.value > maxScore.value) {
+            maxScore.value = score.value;
+            saveSettings();
+        }
     }
     else {
         debugMessages.value.push( `UNKNOWN REQUEST ${request.target} (${request.cmd}, ${request.param})` );
@@ -98,7 +103,22 @@ function onNextTarget() {
     connectionRef.value.send( JSON.stringify( new Response(ResponseType.target, 'random' ) ) );
 }
 
+function saveSettings() {
+    const settingsStr = localStorage.getItem( SettingsName );
+    if (settingsStr) {
+        const settings = JSON.parse( settingsStr ) as ISettings;
+        settings.maxScore = maxScore.value;
+        localStorage.setItem( SettingsName, JSON.stringify( settings ));
+    }
+}
+
 onMounted(() => {
+    const settingsStr = localStorage.getItem( SettingsName );
+    if (settingsStr) {
+        const settings = JSON.parse( settingsStr ) as ISettings;
+        maxScore.value = settings.maxScore || maxScore.value;
+    }
+
     window.addEventListener( "error" , (e) => { debugMessages.value.push( `ERROR: ${e.message}` )})
 
     window.addEventListener('keydown', (e) => {
@@ -116,7 +136,7 @@ onMounted(() => {
 </script>
 
 <template lang="pug">
-main(@keyup.enter ="onEnter")
+main
     Connection(ref="connectionRef"
         @request="onRequest"
         @connected="onConnected")
@@ -139,8 +159,12 @@ main(@keyup.enter ="onEnter")
         div(v-for="err in debugMessages") {{ err }}
 
     .score-container
-        .score-label score:
-        .score {{ score }}
+        .score-display
+            .score-label score:
+            .score {{ score }}
+        .score-display.record
+            .score-label record:
+            .score {{ score }}
 </template>
 
 <style>
@@ -223,19 +247,31 @@ img.target {
     right: 0;
     padding: 0.5rem 1rem;
     display: flex;
+    flex-direction: column;
+}
+.score-display {
+    display: flex;
     align-items: stretch;
+    align-content: space-between;
 }
 .score-label {
     font-family: Quicksand, sans-serif;
-    font-size: 2.75em;
+    font-size: 2.75rem;
     padding-right: 0.25em;
-    margin: auto;
+    margin: auto 0;
 }
 .score {
     font-family: Inter, sans-serif;
     font-size: 3.5rem;
     line-height: 1em;
-    margin: auto;
+    margin: auto 0;
+}
+.record * {
+    font-size: 1.5rem;
+    color: coral;
+}
+.record .score {
+    font-size: 2.5rem;
 }
 
 @media screen and (min-width: 1024px) {
@@ -250,7 +286,6 @@ img.target {
         margin: 0.5em 1em;
     }
     .score {
-        font-size: 5rem;
         min-width: 2.5em;
     }
 }

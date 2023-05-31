@@ -1,6 +1,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
+import { SettingsName } from '../common'
+
 import type { ISettings, IRequest } from '../common'
 
 const enum ConnState {
@@ -65,7 +67,7 @@ export default defineComponent({
         },
 
         applySettings() {
-            localStorage.setItem( 'emirrorquest', JSON.stringify({
+            localStorage.setItem( SettingsName, JSON.stringify({
                 ip: this.ip,
             } as ISettings));
 
@@ -81,7 +83,7 @@ export default defineComponent({
         }
     },
     mounted() {
-        const settingsStr = localStorage.getItem( 'emirrorquest' );
+        const settingsStr = localStorage.getItem( SettingsName );
         if (settingsStr) {
             const settings = JSON.parse( settingsStr ) as ISettings;
             this.ip = settings.ip || this.ip;
