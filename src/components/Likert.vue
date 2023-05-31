@@ -3,17 +3,26 @@ import { defineComponent } from 'vue'
 
 export default defineComponent({
     props: {
+        count: {
+            type: Number,
+            default: 5,
+        },
         title: String,
     },
     data: () => {
         return {
-            values: [1, 2, 3, 4, 5]
+            values: [] as Array<number>,
         };
     },
     emits: ['value'],
     methods: {
         submit(v: number) {
             this.$emit('value', v);
+        }
+    },
+    mounted() {
+        for (let i = 1; i <= this.count; i++) {
+            this.values.push(i);
         }
     }
 })

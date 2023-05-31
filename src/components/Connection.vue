@@ -1,9 +1,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { SettingsName } from '../common'
+import { settings } from '../settings'
 
-import type { ISettings, IRequest } from '../common'
+import type { IRequest } from '../comm'
 
 const enum ConnState {
     NotInitialized,
@@ -63,13 +63,13 @@ export default defineComponent({
         },
 
         send(data: string) {
-            this.socket?.send(data)
+            console.log('SND', data);
+            this.socket?.send(data);
         },
 
         applySettings() {
-            localStorage.setItem( SettingsName, JSON.stringify({
-                ip: this.ip,
-            } as ISettings));
+            settings.value.ip = this.ip;
+            settings.save();
 
             this.socket?.close();
             this.socket = this.connect();
@@ -83,12 +83,7 @@ export default defineComponent({
         }
     },
     mounted() {
-        const settingsStr = localStorage.getItem( SettingsName );
-        if (settingsStr) {
-            const settings = JSON.parse( settingsStr ) as ISettings;
-            this.ip = settings.ip || this.ip;
-        }
-
+        this.ip = settings.value.ip;
         this.socket = this.connect();
     },
 })

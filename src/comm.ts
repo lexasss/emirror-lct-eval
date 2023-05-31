@@ -1,10 +1,3 @@
-export const SettingsName = 'emirrorquest';
-
-export interface ISettings {
-    ip: string;
-    maxScore: number;
-}
-
 export interface IRequest {
     target: string;
     cmd: string;
