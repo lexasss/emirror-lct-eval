@@ -1,40 +1,16 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { AnswerOption } from '../questionnaire'
-
-const Answers: Array<AnswerOption> = [
-    new AnswerOption(
-        0,
-        'Safe',
-        ['no cars on the next lane or the cars were far enough'],
-    ), new AnswerOption(
-        1,
-        'Probably safe',
-        ['a car on the next lane yet not very close'],
-    ), new AnswerOption(
-        2,
-        'Probably not safe',
-        ['a car on the next lane yet not very close but quickly approaching'],
-    ), new AnswerOption(
-        3,
-        'Not safe',
-        ['a car on the next lane very close'],
-    ),
-]
-
 export default defineComponent({
     props: {
         title: String,
     },
     data: () => {
         return {
-            answers: Answers,
+            values: [1, 2, 3, 4, 5]
         };
     },
     emits: ['value'],
-    computed: {
-    },
     methods: {
         submit(v: number) {
             this.$emit('value', v);
@@ -47,10 +23,11 @@ export default defineComponent({
 div
     h1.title {{ title }}
     ul.options
-        li.option(v-for="answer in answers")
-            button(@click="submit(answer.id)") {{ answer.answer }}
-            .descriptions
-                .descrition(v-for="d in answer.descrition") {{ d }}
+        li.option(v-for="value in values")
+            button(@click="submit(value)") {{ value }}
+    .labels
+        .label Unsafe
+        .label Safe
 </template>
 
 <style scoped>
@@ -63,12 +40,13 @@ div
 .options {
     display: flex;
     flex-direction: row;
+    padding: 5em 0 0;
 }
 
 .option {
     display: flex;
     flex-direction: column;
-    padding: 1em 0.5em 0;
+    padding: 1em 0.5em;
     list-style: none;
 }
 
@@ -77,9 +55,11 @@ button {
     padding: 2em;
 }
 
-.descriptions {
-    pointer-events: none;
-    user-select: none;
+.labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 3.75em;
+    padding: 0.5em;
 }
 
 @media screen and (max-width: 1024px) {

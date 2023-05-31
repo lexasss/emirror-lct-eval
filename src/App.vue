@@ -1,34 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, handleError, onActivated } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 
 import type { Ref } from 'vue'
 import type { IRequest } from './common'
 
-import { AnswerOption } from './questionnaire'
 import { Response, ResponseType, RequestType } from './common'
 
 import Questionnaire from './components/Questionnaire.vue'
+import Likert from './components/Likert.vue'
 import Connection from './components/Connection.vue'
-
-const Answers: Array<AnswerOption> = [
-    new AnswerOption(
-        0,
-        'Safe',
-        ['no cars on the next lane or the cars were far enough'],
-    ), new AnswerOption(
-        1,
-        'Probably safe',
-        ['a car on the next lane yet not very close'],
-    ), new AnswerOption(
-        2,
-        'Probably not safe',
-        ['a car on the next lane yet not very close but quickly approaching'],
-    ), new AnswerOption(
-        3,
-        'Not safe',
-        ['a car on the next lane very close'],
-    ),
-]
 
 const connectionRef = ref()
 const instruction: Ref<string[]> = ref( [] );
@@ -120,12 +100,23 @@ function onNextTarget() {
 
 onMounted(() => {
     window.addEventListener( "error" , (e) => { debugMessages.value.push( `ERROR: ${e.message}` )})
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key == 'q') {
+            const req = {
+                target: RequestType.questionnaire,
+                cmd: "show",
+                param: null,
+            } as IRequest;
+            onRequest(req);
+        }
+    });
 });
 
 </script>
 
 <template lang="pug">
-main
+main(@keyup.enter ="onEnter")
     Connection(ref="connectionRef"
         @request="onRequest"
         @connected="onConnected")
@@ -136,9 +127,12 @@ main
             .instruction(v-for="inst in instruction") {{ inst }}
             img.target(v-if="hasTargetImage" :src="targetImage")
 
-    Questionnaire(v-if="isQuestionnaireVisible"
+    //- Questionnaire(v-if="isQuestionnaireVisible"
+    //-     title="How safe it was to change the lane?"
+    //-     :answers="Answers"
+    //-     @value="onQuestionnaireAnswer")
+    Likert(v-if="isQuestionnaireVisible"
         title="How safe it was to change the lane?"
-        :answers="Answers"
         @value="onQuestionnaireAnswer")
 
     h3.debug(v-show="hasDebugMessages")
