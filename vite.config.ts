@@ -25,7 +25,7 @@ const baseConfig = {
 const devConfig = baseConfig;
 
 const buildConfig = {...baseConfig, ...{
-    base: '/emirror-wideview/'
+    base: '/emirror-lct-eval/'
 }};
 
 
